@@ -73,3 +73,48 @@ def get_report(output):
 get_report(output_file_name)
 
 
+get_report_v2(output):
+    conn = None
+    with open("queries_file.json", "r") as f:
+        queries = json.load(f)
+        
+    report = dict()
+    try:
+        params  = config()
+        conn = psycopg2.connect(**params)
+
+        cur = conn.cursor()
+        queries2 = tqdm.tqdm(queries)
+        for query in queries:
+            statement = queries[query]
+            cur.execute(statement)
+            cols = [i[0] for i in cur.description]
+            print(cols)
+            results = []
+            for row in cur.fetchall():
+                results.append(dict(zip(cols, row)))
+
+            report[query] = results
+            
+            with open(f"{output}.json", "w") as file_:
+            json.dump(report, file_, indent=2, default=str)
+    except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
+            wb.save(f"{path + output}.xlsx")
+    finally:
+        if conn is not None:
+            conn.close()
+
+get_report_v2("query_report")
+
+def convert_html():
+    data = open('query_report.json','r')
+    jsonFile = data.read()
+    res = json.loads(jsonFile)
+    html_data = json2html.convert(json=res)
+    with open("Query_report_new.html", "w") as ft:
+        ft.write(html_data)
+        
+convert_html()
+
+
